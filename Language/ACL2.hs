@@ -50,7 +50,7 @@ module Language.ACL2
   ) where
 
 import Data.List
-import System.Environment
+import System.Directory
 import System.Process
 
 data SExpr
@@ -87,18 +87,18 @@ sExpr a = case a of
 
 check' :: [Expr] -> IO (Bool, String)
 check' a = do
-  exe <- savedACL2
+  exe <- findACL2
   (_, result, _) <- readProcessWithExitCode exe [] code
   let pass = not $ any (isPrefixOf "ACL2 Error") $ lines result
   return (pass, result)
   where
   code = unlines $ map show a
-  savedACL2 :: IO FilePath
-  savedACL2 = do
-    env <- getEnvironment
-    case lookup "ACL2_SOURCES" env of
-      Nothing -> error "Environment variable ACL2_SOURCES not set."
-      Just a -> return $ a ++ "/saved_acl2"
+  findACL2 :: IO FilePath
+  findACL2 = do
+    macl2 <- findExecutable "acl2"
+    case macl2 of
+      Nothing -> error "Could not find `acl2' executable!"
+      Just a -> return a
 
 check :: [Expr] -> IO Bool
 check a = check' a >>= return . fst
